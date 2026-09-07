@@ -1722,7 +1722,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple:</span>
 
-<span class="sd">        - **Tile offsets**. Int32 [num_active_tiles + 1]. ``tile_offsets[i]`` is</span>
+<span class="sd">        - **Tile offsets**. Int64 [num_active_tiles + 1]. ``tile_offsets[i]`` is</span>
 <span class="sd">          the exclusive prefix-sum start of the flatten-id range for</span>
 <span class="sd">          ``active_tiles[i]``; the trailing sentinel ``tile_offsets[-1] ==</span>
 <span class="sd">          n_isects``.</span>
@@ -2747,7 +2747,8 @@
 <span class="sd">    kernel raises ``ValueError``.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        return_last_ids: If True, also return last flatten_idx per pixel. Default: True.</span>
+<span class="sd">        return_last_ids: If True, also return the last tile-local offset in</span>
+<span class="sd">            ``flatten_ids`` per pixel. Default: True.</span>
 <span class="sd">        return_sample_counts: If True, also return number of accumulated samples per pixel. Default: False.</span>
 <span class="sd">        return_normals: If True, compute and return accumulated normals per pixel.</span>
 <span class="sd">            Normals are computed from Gaussian quaternions (canonical normal = (0,0,1)</span>
@@ -2767,7 +2768,8 @@
 
 <span class="sd">        - **Rendered colors**. [..., C, image_height, image_width, channels]</span>
 <span class="sd">        - **Rendered alphas**. [..., C, image_height, image_width, 1]</span>
-<span class="sd">        - **Last flatten_idx** (optional). [..., C, image_height, image_width]. If return_last_ids=True.</span>
+<span class="sd">        - **Last tile-local flatten_ids offset** (optional). [..., C, image_height,</span>
+<span class="sd">          image_width]. If return_last_ids=True.</span>
 <span class="sd">        - **Sample counts** (optional). [..., C, image_height, image_width]. If return_sample_counts=True.</span>
 <span class="sd">        - **Rendered normals** (optional). [..., C, image_height, image_width, 3]. If return_normals=True.</span>
 <span class="sd">    """</span>
@@ -2935,7 +2937,13 @@
 <span class="sd">            Gaussians are sorted by their z-coordinate in camera space. If False, they are sorted</span>
 <span class="sd">            by their Euclidean distance from the camera origin. The z-coordinate sorting is typically</span>
 <span class="sd">            faster and sufficient for most cases, while Euclidean distance can be useful for scenes</span>
-<span class="sd">            with wide field-of-view or non-standard camera models. Default: True.</span>
+<span class="sd">            with wide field-of-view or non-standard camera models. When False, the UT projection</span>
+<span class="sd">            kernel uses Euclidean near/far culling only for LiDAR and FTheta; forward-only camera</span>
+<span class="sd">            models continue to use camera-space z culling. A wide-FOV FTheta calibration therefore</span>
+<span class="sd">            requires ``global_z_order=False`` to render its beyond-180-degree band. The same setting</span>
+<span class="sd">            also makes the D/ED depth channel use Euclidean distance. An FTheta ``max_angle`` must</span>
+<span class="sd">            come from calibration and must not be raised merely to widen rendered FOV: its forward</span>
+<span class="sd">            polynomial is trusted only over ``[0, max_angle]``. Default: True.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">lidar_coeffs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
